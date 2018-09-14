@@ -1,0 +1,4 @@
+{
+    "commandDescription": "List all plugins in the registry.",
+    "errorNoPluginResults": "No plugins found in the registry."
+}
