@@ -1,6 +1,6 @@
 import { core, SfdxCommand } from '@salesforce/command';
-import { format } from 'url';
-import { get } from 'https';
+// import * as url from 'url';
+import * as request from 'request';
 
 // Initialize Messages with the current plugin directory
 core.Messages.importMessagesDirectory(__dirname);
@@ -26,7 +26,7 @@ export default class List extends SfdxCommand {
 
   protected static requiresProject = false;
 
-  private static registry_url = "https://skimdb.npmjs.com/registry/_design/app/_view/dependedUpon?group_level=3&startkey=%5B%22@salesforce/command%22%5D&endkey=%5B%22@salesforce/command%22%2C%7B%7D%5D&skip=0&limit=1000";
+  private static registry_url = 'https://skimdb.npmjs.com/registry/_design/app/_view/dependedUpon?group_level=3&startkey=%5B%22@salesforce/command%22%5D&endkey=%5B%22@salesforce/command%22%2C%7B%7D%5D&skip=0&limit=1000';
 
   public async run(): Promise<core.AnyJson> {
     // The output and --json will automatically be handled for you.
@@ -34,18 +34,59 @@ export default class List extends SfdxCommand {
     //   throw new core.SfdxError(messages.getMessage('errorNoOrgResults', [this.org.getOrgId()]));
     // }
 
-    let dependedUponUrl = format({
-      protocol: 'https',
-      host: 'skimdb.npmjs.com/registry/_design/app/_view/dependedUpon',
-      query: {
+    var options = {
+      uri: 'https://skimdb.npmjs.com/registry/_design/app/_view/dependedUpon',
+      qs: {
         group_level: 3,
         startkey: `["@salesforce/command"]`,
         endkey: `["@salesforce/command",{}]`,
         skip: 0,
         limit: 1000
-      });
+      },
+      json: true
+    };
 
-    this.ux.log("Hello registry!");
+    this.ux.log(options);
+
+    // request(options)
+    //   .then(function (plugins) {
+    //     this.ux.log('NPM has %d plugins', plugins.length);
+    //     this.ux.log(plugins);
+    //   })
+    //   .catch(function (err) {
+    //     this.ux.log('err:' + err);
+    //   });
+
+    request(options, function (error, response, body) {
+      if (error) {
+        this.ux.error(err);
+      } else {
+        console.log('-----------------');
+        var plugins = body.rows;
+        for (let plugin of plugins) {
+
+          var name = plugin.key[1];
+          var description = plugin.key[2];
+          // console.log(plugin);
+          console.log(name + '::::' + description);
+        }
+        console.log('NPM has %d plugins', body.rows.length);
+      }
+    });
+    // this.ux.log('NPM has %d plugins', plugins.length);
+
+    // let dependedUponUrl = url.format({
+    //   protocol: 'https',
+    //   host: 'skimdb.npmjs.com/registry/_design/app/_view/dependedUpon',
+    //   query: {
+    //     group_level: 3,
+    //     startkey: `['@salesforce/command']`,
+    //     endkey: `['@salesforce/command',{}]`,
+    //     skip: 0,
+    //     limit: 1000
+    //   });
+
+    this.ux.log('Hello registry!');
 
     // Return an object to be displayed with --json
     return {};
