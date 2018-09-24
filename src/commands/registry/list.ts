@@ -14,9 +14,10 @@ export default class List extends SfdxCommand {
 
   public static examples = [
     `$ sfdx registry:list
-  PLUGIN NAME           DESCRIPTION
-  sfdx-hello-world      Sample plugin.
-  `
+    Plugin Name                          Description
+    ───────────────────────────────────  ───────────────────────────────────────────────────────────────────────────────────
+    sfdx-hello-world                     Sample plugin.
+    `
   ];
 
   protected static requiresUsername = false;
@@ -47,18 +48,55 @@ export default class List extends SfdxCommand {
 
     const response = await request(options);
 
+    var maxName = 0;
+    var maxDesc = 0;
+    for (var plugin of response.rows) {
+      maxName = Math.max(maxName, plugin.key[1].length);
+      maxDesc = Math.max(maxDesc, plugin.key[2].length);
+    }
+    this.ux.log(maxName);
+    this.ux.log(maxDesc);
+
+    // With these values, the max screen width is 120
+    maxName = Math.min(maxName, 35);
+    maxDesc = Math.min(maxDesc, 82);
+
+    this.ux.log(maxName);
+    this.ux.log(maxDesc);
+
     var pluginTable: { string: string }[] = [];
     for (var plugin of response.rows) {
-      pluginTable.push({ 'plugin name': plugin.key[1], 'description': plugin.key[2] });
+      var name = plugin.key[1];
+      if (name.length > (maxName - 2)) {
+        name = name.substring(0, (maxName - 2)) + '...';
+      }
+
+      var description = plugin.key[2];
+      if (description.length > (maxDesc - 2)) {
+        description = description.substring(0, (maxDesc - 2)) + '...';
+      }
+
+      pluginTable.push({ 'name': name, 'description': description });
     }
     this.ux.table(
       pluginTable,
       {
-        columns: ['plugin name', 'description']
+        columns: [
+          {
+            key: 'name',
+            label: 'Plugin Name',
+            width: maxName
+          },
+          {
+            key: 'description',
+            label: 'Description',
+            width: maxDesc
+          }
+        ]
       }
     );
 
-    // Return an object to be displayed with --json
+    // TODO: Return an object to be displayed with --json
     return {};
   }
 }
