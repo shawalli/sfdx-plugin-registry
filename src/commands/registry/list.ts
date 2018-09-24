@@ -1,6 +1,5 @@
 import { core, SfdxCommand } from '@salesforce/command';
-// import * as url from 'url';
-import * as request from 'request';
+import * as request from 'request-promise-native';
 
 // Initialize Messages with the current plugin directory
 core.Messages.importMessagesDirectory(__dirname);
@@ -15,7 +14,7 @@ export default class List extends SfdxCommand {
 
   public static examples = [
     `$ sfdx registry:list
-  Plugin Name           Plugin Description
+  PLUGIN NAME           DESCRIPTION
   sfdx-hello-world      Sample plugin.
   `
   ];
@@ -46,47 +45,18 @@ export default class List extends SfdxCommand {
       json: true
     };
 
-    this.ux.log(options);
+    const response = await request(options);
 
-    // request(options)
-    //   .then(function (plugins) {
-    //     this.ux.log('NPM has %d plugins', plugins.length);
-    //     this.ux.log(plugins);
-    //   })
-    //   .catch(function (err) {
-    //     this.ux.log('err:' + err);
-    //   });
-
-    request(options, function (error, response, body) {
-      if (error) {
-        this.ux.error(err);
-      } else {
-        console.log('-----------------');
-        var plugins = body.rows;
-        for (let plugin of plugins) {
-
-          var name = plugin.key[1];
-          var description = plugin.key[2];
-          // console.log(plugin);
-          console.log(name + '::::' + description);
-        }
-        console.log('NPM has %d plugins', body.rows.length);
+    var pluginTable: { string: string }[] = [];
+    for (var plugin of response.rows) {
+      pluginTable.push({ 'plugin name': plugin.key[1], 'description': plugin.key[2] });
+    }
+    this.ux.table(
+      pluginTable,
+      {
+        columns: ['plugin name', 'description']
       }
-    });
-    // this.ux.log('NPM has %d plugins', plugins.length);
-
-    // let dependedUponUrl = url.format({
-    //   protocol: 'https',
-    //   host: 'skimdb.npmjs.com/registry/_design/app/_view/dependedUpon',
-    //   query: {
-    //     group_level: 3,
-    //     startkey: `['@salesforce/command']`,
-    //     endkey: `['@salesforce/command',{}]`,
-    //     skip: 0,
-    //     limit: 1000
-    //   });
-
-    this.ux.log('Hello registry!');
+    );
 
     // Return an object to be displayed with --json
     return {};
